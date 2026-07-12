@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#05070d" />
+<meta name="color-scheme" content="dark" />
+<meta name="description" content="Matches Vision: Real-time digit distribution, parity, and AI-assisted signal reads for volatility indices. Free, no login required." />
+<title>Matches Vision — Free Digit &amp; Even/Odd Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ============ Design tokens ============ */
+  :root{
+    --void:#05070d;
+    --deep:#090d18;
+    --surface:#0d1424;
+    --surface-2:#131b2e;
+    --surface-3:#1a2338;
+    --glass-border:rgba(148,163,196,0.14);
+    --glass-border-hover:rgba(148,163,196,0.30);
+
+    --cyan:#22d3ee;
+    --cyan-dim:rgba(34,211,238,0.14);
+    --violet:#a78bfa;
+    --violet-dim:rgba(167,139,250,0.14);
+    --amber:#fbbf24;
+    --amber-dim:rgba(251,191,36,0.14);
+    --emerald:#34d399;
+    --emerald-dim:rgba(52,211,153,0.14);
+    --danger:#f87171;
+    --danger-dim:rgba(248,113,113,0.14);
+
+    --text:#f2f5f9;
+    --text-dim:#94a3b8;
+    --text-dim2:#5b6780;
+
+    --even:var(--cyan);
+    --odd:var(--amber);
+
+    --font-display:'Space Grotesk',Inter,sans-serif;
+    --font-body:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+
+    --ease-out-expo:cubic-bezier(.16,1,.3,1);
+  }
+
+  *{box-sizing:border-box;}
+  html{background:var(--void);}
+  body{
+    margin:0;
+    background:var(--void);
+    color:var(--text);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    position:relative;
+    min-height:100vh;
+  }
+  ::selection{background:var(--cyan-dim);color:var(--text);}
+  *:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;border-radius:6px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;scroll-behavior:auto !important;}
+  }
+
+  /* ============ Ambient background layers ============ */
+  #particlesCanvas{position:fixed;inset:0;z-index:-1;display:block;width:100%;height:100%;}
+  .gradient-mesh{position:fixed;inset:0;z-index:-2;overflow:hidden;background:
+    radial-gradient(ellipse 120% 80% at 50% -10%, #0c1830 0%, var(--void) 55%);
+  }
+  .gradient-mesh span{position:absolute;border-radius:50%;filter:blur(90px);}
+  .gradient-mesh span.b1{width:560px;height:560px;background:var(--cyan);opacity:.22;top:-160px;left:-120px;animation:driftA 26s ease-in-out infinite;}
+  .gradient-mesh span.b2{width:480px;height:480px;background:var(--violet);opacity:.20;bottom:-160px;right:-100px;animation:driftB 32s ease-in-out infinite;}
+  .gradient-mesh span.b3{width:400px;height:400px;background:var(--emerald);opacity:.12;top:38%;left:58%;animation:driftC 38s ease-in-out infinite;}
+  @keyframes driftA{0%,100%{transform:translate(0,0);}50%{transform:translate(70px,50px);}}
+  @keyframes driftB{0%,100%{transform:translate(0,0);}50%{transform:translate(-60px,-70px);}}
+  @keyframes driftC{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(-50px,35px) scale(1.12);}}
+
+  /* ============ Ticker ribbon ============ */
+  .ticker-ribbon{position:relative;overflow:hidden;border-bottom:1px solid var(--glass-border);background:rgba(9,13,24,.7);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);}
+  .ticker-track{display:flex;gap:44px;white-space:nowrap;padding:9px 0;width:max-content;animation:tickerScroll 38s linear infinite;}
+  .ticker-track span{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.09em;color:var(--text-dim);text-transform:uppercase;display:inline-flex;align-items:center;gap:9px;}
+  .tk-dot{width:5px;height:5px;border-radius:50%;background:var(--cyan);box-shadow:0 0 7px var(--cyan);flex-shrink:0;}
+  @keyframes tickerScroll{from{transform:translateX(0);}to{transform:translateX(-50%);}}
+
+  .wrap{max-width:1120px;margin:0 auto;padding:26px 20px 70px;position:relative;z-index:1;}
+
+  /* ============ Header ============ */
+  header{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    margin-bottom:6px;padding:12px 4px;position:sticky;top:0;z-index:20;
+    background:linear-gradient(180deg, rgba(5,7,13,.92) 60%, rgba(5,7,13,0));
+    backdrop-filter:blur(6px);
+  }
+  .brand{display:flex;align-items:center;gap:11px;}
+  .brand .mark{
+    width:34px;height:34px;border-radius:10px;flex-shrink:0;position:relative;
+    background:linear-gradient(135deg, var(--cyan), var(--violet));
+    box-shadow:0 0 22px -4px var(--cyan);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .brand .mark .dot{width:8px;height:8px;border-radius:999px;background:#04141a;}
+  .brand h1{
+    font-family:var(--font-display);font-size:1.28rem;margin:0;font-weight:700;letter-spacing:.01em;
+    background:linear-gradient(90deg,#f2f5f9,#b7c3d9 70%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .free-badge{
+    font-family:var(--font-mono);font-size:.66rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--emerald);background:var(--emerald-dim);border:1px solid rgba(52,211,153,.35);
+    padding:5px 11px;border-radius:999px;white-space:nowrap;
+  }
+  .tagline{color:var(--text-dim);font-size:.92rem;margin:6px 4px 24px;max-width:640px;line-height:1.55;}
+
+  /* ============ Glass panel system ============ */
+  .panel{
+    position:relative;background:linear-gradient(180deg, rgba(26,35,56,.55), rgba(13,20,36,.6));
+    border:1px solid var(--glass-border);border-radius:20px;padding:22px;margin-bottom:20px;
+    backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);
+    box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 24px 60px -28px rgba(0,0,0,.7);
+    transition:border-color .25s ease;
+    animation:panelRise .7s var(--ease-out-expo) both;
+  }
+  .panel:hover{border-color:var(--glass-border-hover);}
+  @keyframes panelRise{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+  .panel h2{
+    font-family:var(--font-body);font-size:.74rem;text-transform:uppercase;letter-spacing:.11em;
+    color:var(--text-dim);margin:0 0 16px;font-weight:700;display:flex;align-items:center;gap:8px;
+  }
+  .panel h2::before{content:'';width:5px;height:5px;border-radius:999px;background:var(--cyan);box-shadow:0 0 6px var(--cyan);}
+
+  .controls-grid{display:grid;grid-template-columns:1fr;gap:14px;}
+  @media(min-width:768px){.controls-grid{grid-template-columns:repeat(4,1fr);align-items:end;}}
+
+  label{display:block;font-size:.74rem;color:var(--text-dim);margin-bottom:7px;font-weight:600;letter-spacing:.01em;}
+
+  select,input{
+    width:100%;background:rgba(19,27,46,.8);border:1px solid rgba(148,163,196,.18);color:var(--text);
+    padding:10px 12px;border-radius:11px;font-size:.88rem;outline:none;font-family:var(--font-body);
+    transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+  select{
+    appearance:none;-webkit-appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2394a3b8' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 13px center;padding-right:32px;
+  }
+  select:hover,input:hover{border-color:rgba(148,163,196,.32);}
+  select:focus,input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px var(--cyan-dim);background:rgba(19,27,46,.95);}
+  input::placeholder{color:var(--text-dim2);}
+
+  .mode-toggle{display:flex;border:1px solid rgba(148,163,196,.18);border-radius:11px;overflow:hidden;background:rgba(19,27,46,.6);}
+  .mode-toggle button{
+    flex:1;padding:10px 8px;background:transparent;color:var(--text-dim);border:none;
+    font-size:.82rem;font-weight:700;cursor:pointer;transition:.2s ease;font-family:var(--font-body);
+  }
+  .mode-toggle button:hover{color:var(--text);}
+  .mode-toggle button.active{
+    background:linear-gradient(135deg, var(--cyan), #0ea5e9);color:#04202b;
+    box-shadow:0 0 18px -4px var(--cyan);
+  }
+
+  .btn{
+    background:linear-gradient(135deg, var(--cyan), #38bdf8);color:#04202b;border:none;border-radius:11px;
+    padding:11px 16px;font-weight:700;font-size:.9rem;cursor:pointer;transition:.18s ease;
+    width:100%;font-family:var(--font-body);box-shadow:0 8px 24px -10px rgba(34,211,238,.55);
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 10px 28px -8px rgba(34,211,238,.7);}
+  .btn:active{transform:translateY(0);}
+  .btn:disabled{background:var(--surface-3);color:var(--text-dim);opacity:.7;cursor:default;box-shadow:none;transform:none;}
+
+  .status-row{display:flex;align-items:center;gap:10px;margin-top:16px;font-size:.85rem;color:var(--text-dim);flex-wrap:wrap;}
+  .status-pill{display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;background:rgba(19,27,46,.7);border:1px solid rgba(148,163,196,.14);font-family:var(--font-mono);font-size:.78rem;}
+  .status-pill .dot{width:8px;height:8px;border-radius:999px;}
+  .dot-live{background:var(--emerald);box-shadow:0 0 8px var(--emerald);animation:dotPulseLive 2s ease-out infinite;}
+  .dot-demo{background:var(--amber);box-shadow:0 0 8px var(--amber);animation:dotPulseDemo 2.4s ease-out infinite;}
+  .dot-off{background:var(--text-dim2);}
+  @keyframes dotPulseLive{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55);}70%{box-shadow:0 0 0 9px rgba(52,211,153,0);}100%{box-shadow:0 0 0 0 rgba(52,211,153,0);}}
+  @keyframes dotPulseDemo{0%{box-shadow:0 0 0 0 rgba(251,191,36,.5);}70%{box-shadow:0 0 0 8px rgba(251,191,36,0);}100%{box-shadow:0 0 0 0 rgba(251,191,36,0);}}
+
+  .grid-main{display:grid;grid-template-columns:1fr;gap:20px;}
+  @media(min-width:1024px){.grid-main{grid-template-columns:1.3fr 1fr;}}
+
+  .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+  .stat-card{
+    background:rgba(19,27,46,.6);border:1px solid rgba(148,163,196,.1);border-radius:14px;padding:14px 10px;text-align:center;
+    transition:border-color .2s ease, transform .2s ease;
+  }
+  .stat-card:hover{border-color:rgba(148,163,196,.24);transform:translateY(-2px);}
+  .stat-card .val{font-family:var(--font-mono);font-size:1.6rem;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+  .stat-card .lbl{font-size:.66rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-top:4px;font-weight:600;}
+
+  .hist{display:flex;align-items:flex-end;gap:8px;height:180px;padding-top:10px;}
+  .hist .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;}
+  .bar{
+    width:100%;background:linear-gradient(180deg, var(--cyan), rgba(34,211,238,.25));border-radius:7px 7px 2px 2px;
+    transition:height .4s var(--ease-out-expo);min-height:2px;position:relative;
+    box-shadow:0 0 12px -4px rgba(34,211,238,.6);
+  }
+  .bar.hot{background:linear-gradient(180deg, var(--amber), rgba(251,191,36,.25));box-shadow:0 0 16px -3px rgba(251,191,36,.8);}
+  .bar-pct{font-family:var(--font-mono);font-size:.64rem;color:var(--text-dim);margin-bottom:5px;font-variant-numeric:tabular-nums;}
+  .bar-lbl{font-family:var(--font-mono);font-size:.86rem;font-weight:700;margin-top:9px;color:var(--text);}
+
+  .eo-bars{display:flex;gap:10px;margin:16px 0;}
+  .eo-bar{flex:1;background:rgba(19,27,46,.6);border:1px solid rgba(148,163,196,.1);border-radius:12px;padding:15px;text-align:center;transition:border-color .2s ease;}
+  .eo-bar:hover{border-color:rgba(148,163,196,.26);}
+  .eo-bar .pct{font-family:var(--font-mono);font-size:1.85rem;font-weight:700;font-variant-numeric:tabular-nums;}
+  .eo-bar.even .pct{color:var(--even);text-shadow:0 0 18px rgba(34,211,238,.4);}
+  .eo-bar.odd .pct{color:var(--odd);text-shadow:0 0 18px rgba(251,191,36,.4);}
+  .eo-bar .lbl{font-size:.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.07em;margin-top:3px;font-weight:600;}
+
+  .streak{
+    background:rgba(19,27,46,.6);border:1px solid rgba(148,163,196,.1);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;
+    align-items:center;margin-bottom:16px;
+  }
+  .streak .lbl{font-size:.75rem;color:var(--text-dim);}
+  .streak .val{font-family:var(--font-mono);font-weight:700;font-size:1.05rem;}
+  .streak .val.even-c{color:var(--even);}
+  .streak .val.odd-c{color:var(--odd);}
+
+  .seq{display:flex;flex-wrap:wrap;gap:6px;}
+  .seq span{
+    width:29px;height:29px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-family:var(--font-mono);font-size:.8rem;font-weight:700;background:rgba(19,27,46,.6);color:var(--text-dim);
+    border:1px solid rgba(148,163,196,.1);
+  }
+  .seq span.even-d{background:var(--cyan-dim);color:var(--cyan);border-color:rgba(34,211,238,.3);}
+  .seq span.odd-d{background:var(--amber-dim);color:var(--odd);border-color:rgba(251,191,36,.3);}
+
+  .empty{color:var(--text-dim2);font-size:.85rem;text-align:center;padding:40px 0;}
+
+  footer{text-align:center;color:var(--text-dim2);font-size:.78rem;margin-top:34px;line-height:1.7;}
+  footer a{color:var(--cyan);text-decoration:none;}
+  footer a:hover{text-decoration:underline;}
+
+  .banner{
+    border-radius:12px;padding:11px 15px;font-size:.82rem;margin-bottom:18px;display:none;
+    border:1px solid transparent;line-height:1.5;backdrop-filter:blur(10px);
+  }
+  .banner.show{display:block;}
+  .banner-warn{background:var(--amber-dim);border-color:rgba(251,191,36,.35);color:#fcd34d;}
+  .banner-info{background:var(--cyan-dim);border-color:rgba(34,211,238,.35);color:#a5f3fc;}
+
+  .signal-badge{
+    padding:18px 24px;border-radius:16px;font-family:var(--font-display);font-weight:700;font-size:1.12rem;letter-spacing:.03em;
+    text-align:center;min-width:168px;border:1px solid transparent;position:relative;overflow:hidden;transition:all .3s ease;
+  }
+  .signal-gathering{background:var(--surface-3);color:var(--text-dim);border-color:rgba(148,163,196,.16);}
+  .signal-gathering::after{
+    content:'';position:absolute;top:0;left:-45%;width:45%;height:100%;
+    background:linear-gradient(90deg, transparent, rgba(148,163,196,.16), transparent);
+    animation:scan 1.9s linear infinite;
+  }
+  @keyframes scan{from{left:-45%;}to{left:105%;}}
+  .signal-over{background:linear-gradient(135deg, rgba(34,211,238,.16), rgba(34,211,238,.04));color:var(--cyan);border-color:rgba(34,211,238,.4);box-shadow:0 0 26px -6px rgba(34,211,238,.55);}
+  .signal-under{background:linear-gradient(135deg, rgba(251,191,36,.16), rgba(251,191,36,.04));color:var(--odd);border-color:rgba(251,191,36,.4);box-shadow:0 0 26px -6px rgba(251,191,36,.55);}
+  .signal-neutral{background:var(--surface-3);color:var(--text-dim);border-color:rgba(148,163,196,.16);}
+  .signal-badge.flash{animation:badgeFlash .55s ease;}
+  @keyframes badgeFlash{0%{transform:scale(.93);}55%{transform:scale(1.045);}100%{transform:scale(1);}}
+
+  .conf-track{height:8px;border-radius:999px;background:rgba(19,27,46,.8);overflow:hidden;border:1px solid rgba(148,163,196,.1);}
+  .conf-fill{height:100%;background:linear-gradient(90deg,var(--cyan),var(--emerald));border-radius:999px;transition:width .5s var(--ease-out-expo);box-shadow:0 0 10px rgba(34,211,238,.6);}
+
+  .ai-reason{
+    background:rgba(19,27,46,.55);border:1px solid rgba(148,163,196,.1);border-radius:12px;padding:13px 15px;font-size:.85rem;color:var(--text-dim);line-height:1.65;
+  }
+
+  /* AI panel signature treatment */
+  #aiPanel{
+    border-color:rgba(167,139,250,.28);
+    background:linear-gradient(180deg, rgba(37,26,66,.5), rgba(13,20,36,.72));
+    box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 28px 70px -28px rgba(139,92,246,.3);
+  }
+  #aiPanel::before{
+    content:'';position:absolute;inset:0;border-radius:20px;padding:1px;pointer-events:none;
+    background:linear-gradient(120deg, transparent, rgba(167,139,250,.55), transparent);
+    background-size:220% 100%;
+    -webkit-mask:linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;
+    animation:borderSheen 5.5s linear infinite;
+  }
+  @keyframes borderSheen{from{background-position:220% 0;}to{background-position:-220% 0;}}
+  #aiPanel h2::before{background:var(--violet);box-shadow:0 0 6px var(--violet);}
+
+  .countdown-ring-wrap{position:relative;width:80px;height:80px;flex-shrink:0;}
+  .countdown-ring{width:80px;height:80px;transform:rotate(-90deg);}
+  .ring-track{fill:none;stroke:rgba(148,163,196,.14);stroke-width:5;}
+  .ring-progress{fill:none;stroke:var(--violet);stroke-width:5;stroke-linecap:round;stroke-dasharray:213.63;stroke-dashoffset:213.63;transition:stroke-dashoffset .9s linear;filter:drop-shadow(0 0 5px rgba(167,139,250,.7));}
+  .countdown-inner{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .countdown-inner #countdownVal{font-family:var(--font-mono);font-size:1.05rem;font-weight:700;color:var(--text);}
+  .countdown-caption{font-size:.6rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-top:1px;}
+
+  /* OAuth login button — standard "Sign in with X" convention: neutral surface, brand mark on the left, clear label */
+  .oauth-btn{
+    display:inline-flex;align-items:center;gap:10px;
+    background:#fbfcfe;color:#1f2937;border:1px solid #d1d5db;border-radius:11px;
+    padding:10px 18px 10px 10px;font-size:.88rem;font-weight:600;cursor:pointer;font-family:var(--font-body);
+    transition:.18s ease;box-shadow:0 4px 16px -6px rgba(0,0,0,.4);
+  }
+  .oauth-btn:hover{box-shadow:0 6px 20px -6px rgba(0,0,0,.5);border-color:#9ca3af;transform:translateY(-1px);}
+  .oauth-btn:active{transform:translateY(0);}
+  .oauth-btn:disabled{opacity:.65;cursor:default;box-shadow:none;transform:none;}
+  .oauth-mark{
+    width:26px;height:26px;border-radius:7px;background:#ff444f;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .oauth-mark svg{width:15px;height:15px;}
+
+  .account-chip{
+    display:flex;align-items:center;gap:10px;background:rgba(19,27,46,.7);border:1px solid rgba(148,163,196,.18);
+    border-radius:999px;padding:6px 14px 6px 6px;
+  }
+  .account-avatar{
+    width:30px;height:30px;border-radius:999px;background:linear-gradient(135deg,#ff444f,#ff8a65);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;flex-shrink:0;font-family:var(--font-display);
+  }
+  .account-meta{display:flex;flex-direction:column;line-height:1.25;}
+  .account-meta .id{font-family:var(--font-mono);font-size:.85rem;font-weight:700;}
+  .account-meta .cur{font-size:.66rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;}
+  .icon-btn{
+    background:none;border:none;color:var(--text-dim);cursor:pointer;padding:4px;border-radius:6px;
+    display:flex;align-items:center;justify-content:center;transition:.15s ease;
+  }
+  .icon-btn:hover{color:var(--danger);background:var(--danger-dim);}
+
+  .fine-print{font-size:.72rem;color:var(--text-dim2);margin:10px 0 0;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<canvas id="particlesCanvas" aria-hidden="true"></canvas>
+<div class="gradient-mesh" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>
+
+<div class="ticker-ribbon" aria-hidden="true">
+  <div class="ticker-track">
+    <span><i class="tk-dot"></i>VOLATILITY 10 INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 25 INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 50 INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 75 INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 100 INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 10 (1S) INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 25 (1S) INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 50 (1S) INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 100 (1S) INDEX</span>
+    <span><i class="tk-dot"></i>DIGITS ARE GENERATED BY A CERTIFIED RANDOM NUMBER GENERATOR</span>
+    <span><i class="tk-dot"></i>VOLATILITY 10 INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 25 INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 50 INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 75 INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 100 INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 10 (1S) INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 25 (1S) INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 50 (1S) INDEX</span>
+    <span><i class="tk-dot"></i>VOLATILITY 100 (1S) INDEX</span>
+    <span><i class="tk-dot"></i>DIGITS ARE GENERATED BY A CERTIFIED RANDOM NUMBER GENERATOR</span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <span class="mark"><span class="dot"></span></span>
+      <h1>Matches Vision</h1>
+    </div>
+    <span class="free-badge">Free · No login required</span>
+  </header>
+  <p class="tagline">Real-time digit distribution, parity, and AI-assisted signal reads across Deriv's volatility indices — one glass cockpit, zero guesswork about what's random and what isn't.</p>
+
+  <div class="banner banner-warn" id="fallbackBanner">Live connection unavailable — switched to Demo mode so you can keep exploring the tool.</div>
+  <div class="banner banner-info" id="oauthBanner"></div>
+
+  <div class="panel" style="animation-delay:.02s;">
+    <h2>Setup</h2>
+    <div class="controls-grid">
+      <div>
+        <label for="modeToggle">Data source</label>
+        <div class="mode-toggle" id="modeToggle">
+          <button type="button" data-mode="live" class="active">Live</button>
+          <button type="button" data-mode="demo">Demo</button>
+        </div>
+      </div>
+      <div>
+        <label for="symbolSelect">Volatility index</label>
+        <select id="symbolSelect">
+          <option value="R_10">Volatility 10 Index</option>
+          <option value="R_25">Volatility 25 Index</option>
+          <option value="R_50">Volatility 50 Index</option>
+          <option value="R_75" selected>Volatility 75 Index</option>
+          <option value="R_100">Volatility 100 Index</option>
+          <option value="1HZ10V">Volatility 10 (1s) Index</option>
+          <option value="1HZ25V">Volatility 25 (1s) Index</option>
+          <option value="1HZ50V">Volatility 50 (1s) Index</option>
+          <option value="1HZ100V">Volatility 100 (1s) Index</option>
+        </select>
+      </div>
+      <div>
+        <label for="windowSelect">Tick window</label>
+        <select id="windowSelect">
+          <option value="50">Last 50 ticks</option>
+          <option value="100" selected>Last 100 ticks</option>
+          <option value="200">Last 200 ticks</option>
+        </select>
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button class="btn" id="connectBtn">Start tracking</button>
+      </div>
+    </div>
+
+    <div id="appIdRow" style="margin-top:14px;max-width:420px;">
+      <label for="appIdInput">Deriv App ID (used for both anonymous ticks and OAuth login)</label>
+      <input id="appIdInput" type="text" placeholder="1089" />
+    </div>
+
+    <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--glass-border);">
+      <label style="margin-bottom:10px;">Deriv account</label>
+      <div id="accountLoggedOut" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <button class="oauth-btn" id="oauthBtn">
+          <span class="oauth-mark">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#fff" stroke-width="2"/><path d="M9 12l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+          <span id="oauthBtnLabel">Login via Deriv</span>
+        </button>
+        <span style="font-size:.75rem;color:var(--text-dim2);">Redirects to Deriv's official login page. This app never sees your password, and never places trades.</span>
+      </div>
+      <div id="accountLoggedIn" style="display:none;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div class="account-chip">
+          <span class="account-avatar" id="accountAvatar">D</span>
+          <div class="account-meta">
+            <span class="id" id="accountId">—</span>
+            <span class="cur" id="accountCur">—</span>
+          </div>
+          <span id="verifiedBadge" style="display:none;font-size:.66rem;font-weight:700;color:var(--emerald);background:var(--emerald-dim);padding:3px 9px;border-radius:999px;font-family:var(--font-mono);">✓ Verified</span>
+          <select id="accountSelect" style="width:auto;padding:4px 8px;display:none;margin-left:4px;"></select>
+          <button class="icon-btn" id="logoutBtn" title="Disconnect">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none"><path d="M16 17l5-5-5-5M21 12H9M13 21H6a2 2 0 01-2-2V5a2 2 0 012-2h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="status-row">
+      <span class="status-pill"><span class="dot dot-off" id="statusDot"></span><span id="statusText" aria-live="polite">Not connected</span></span>
+      <span id="tickCountText" style="font-family:var(--font-mono);font-size:.78rem;"></span>
+    </div>
+    <p class="fine-print">
+      Market data streams directly from Deriv. Connecting a Deriv account is optional and only used to authenticate your session — this tool only reads tick data and never places trades or touches your balance.
+    </p>
+  </div>
+
+  <div class="grid-main">
+    <div class="panel" style="animation-delay:.08s;">
+      <h2>Digit distribution</h2>
+      <div class="stat-row">
+        <div class="stat-card"><div class="val" id="mostFreqVal">—</div><div class="lbl">Most frequent</div></div>
+        <div class="stat-card"><div class="val" id="leastFreqVal">—</div><div class="lbl">Least frequent</div></div>
+        <div class="stat-card"><div class="val" id="totalTicksVal">0</div><div class="lbl">Ticks sampled</div></div>
+      </div>
+      <div class="hist" id="histogram"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <div class="panel" style="margin-bottom:0;animation-delay:.14s;">
+        <h2>Over / Under tracker</h2>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+          <label style="margin:0;flex-shrink:0;">Barrier</label>
+          <select id="ouBarrierSelect" style="width:auto;padding:6px 10px;">
+            <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+            <option value="3">3</option><option value="4" selected>4</option><option value="5">5</option>
+            <option value="6">6</option><option value="7">7</option><option value="8">8</option>
+          </select>
+          <span style="font-size:.7rem;color:var(--text-dim2);">Over = digit &gt; barrier · Under = digit &lt; barrier · digit = barrier is a tie</span>
+        </div>
+        <div class="eo-bars">
+          <div class="eo-bar even"><div class="pct" id="overPct">0%</div><div class="lbl">Over</div></div>
+          <div class="eo-bar odd"><div class="pct" id="underPct">0%</div><div class="lbl">Under</div></div>
+        </div>
+        <div class="streak" style="margin-bottom:0;">
+          <span class="lbl">Ties (digit = barrier)</span>
+          <span class="val" id="tiePct">—</span>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:0;animation-delay:.2s;">
+        <h2>Even / Odd tracker</h2>
+        <div class="eo-bars">
+          <div class="eo-bar even"><div class="pct" id="evenPct">0%</div><div class="lbl">Even</div></div>
+          <div class="eo-bar odd"><div class="pct" id="oddPct">0%</div><div class="lbl">Odd</div></div>
+        </div>
+        <div class="streak">
+          <span class="lbl">Current streak</span>
+          <span class="val" id="streakVal">—</span>
+        </div>
+        <h2 style="margin-top:20px;">Last digits</h2>
+        <div class="seq" id="seqRow"><div class="empty">Start tracking to see live digits</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" id="aiPanel" style="animation-delay:.28s;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+      <h2 style="margin:0;">AI Signal Engine</h2>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+        <div>
+          <label style="margin-bottom:4px;">Barrier</label>
+          <select id="barrierSelect" style="width:auto;padding:6px 10px;">
+            <option value="0">0</option><option value="1">1</option><option value="2">2</option>
+            <option value="3">3</option><option value="4" selected>4</option><option value="5">5</option>
+            <option value="6">6</option><option value="7">7</option><option value="8">8</option>
+          </select>
+        </div>
+        <div>
+          <label style="margin-bottom:4px;">Recalculate every</label>
+          <select id="refreshSelect" style="width:auto;padding:6px 10px;">
+            <option value="10">10s</option>
+            <option value="15" selected>15s</option>
+            <option value="30">30s</option>
+            <option value="60">60s</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr;gap:16px;" id="aiGrid">
+      <div style="display:flex;align-items:center;gap:22px;flex-wrap:wrap;">
+        <div id="signalBadge" class="signal-badge signal-gathering" aria-live="polite">GATHERING DATA</div>
+        <div style="flex:1;min-width:160px;">
+          <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--text-dim);margin-bottom:5px;font-family:var(--font-mono);">
+            <span>Confidence</span><span id="confidenceVal">—</span>
+          </div>
+          <div class="conf-track"><div class="conf-fill" id="confidenceFill" style="width:0%"></div></div>
+        </div>
+        <div class="countdown-ring-wrap">
+          <svg class="countdown-ring" viewBox="0 0 80 80">
+            <circle class="ring-track" cx="40" cy="40" r="34"></circle>
+            <circle class="ring-progress" id="countdownRingProgress" cx="40" cy="40" r="34"></circle>
+          </svg>
+          <div class="countdown-inner">
+            <div id="countdownVal">—</div>
+            <div class="countdown-caption">Next signal</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-reason" id="aiReason" aria-live="polite">Start tracking to let the engine build a live sample. It needs at least 20 ticks before issuing a first read.</div>
+
+      <div class="banner banner-info show">
+        Statistical read of the current window only — not a prediction. Volatility index digits are produced by a certified random number generator; no analysis can guarantee the next outcome. Trade at your own discretion and risk.
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Matches Vision is a free, standalone tracking tool. It does not place trades, hold funds, or require an account.<br/>
+    Digit outcomes on volatility indices are randomly generated and historical patterns do not predict future results.
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const els = {
+    modeToggle: document.getElementById('modeToggle'),
+    symbolSelect: document.getElementById('symbolSelect'),
+    windowSelect: document.getElementById('windowSelect'),
+    appIdInput: document.getElementById('appIdInput'),
+    appIdRow: document.getElementById('appIdRow'),
+    connectBtn: document.getElementById('connectBtn'),
+    statusDot: document.getElementById('statusDot'),
+    statusText: document.getElementById('statusText'),
+    tickCountText: document.getElementById('tickCountText'),
+    histogram: document.getElementById('histogram'),
+    mostFreqVal: document.getElementById('mostFreqVal'),
+    leastFreqVal: document.getElementById('leastFreqVal'),
+    totalTicksVal: document.getElementById('totalTicksVal'),
+    evenPct: document.getElementById('evenPct'),
+    oddPct: document.getElementById('oddPct'),
+    streakVal: document.getElementById('streakVal'),
+    seqRow: document.getElementById('seqRow'),
+    fallbackBanner: document.getElementById('fallbackBanner'),
+    barrierSelect: document.getElementById('barrierSelect'),
+    refreshSelect: document.getElementById('refreshSelect'),
+    signalBadge: document.getElementById('signalBadge'),
+    confidenceVal: document.getElementById('confidenceVal'),
+    confidenceFill: document.getElementById('confidenceFill'),
+    countdownVal: document.getElementById('countdownVal'),
+    countdownRingProgress: document.getElementById('countdownRingProgress'),
+    aiReason: document.getElementById('aiReason'),
+    ouBarrierSelect: document.getElementById('ouBarrierSelect'),
+    overPct: document.getElementById('overPct'),
+    underPct: document.getElementById('underPct'),
+    tiePct: document.getElementById('tiePct'),
+    oauthBtn: document.getElementById('oauthBtn'),
+    oauthBtnLabel: document.getElementById('oauthBtnLabel'),
+    logoutBtn: document.getElementById('logoutBtn'),
+    accountLoggedOut: document.getElementById('accountLoggedOut'),
+    accountLoggedIn: document.getElementById('accountLoggedIn'),
+    accountAvatar: document.getElementById('accountAvatar'),
+    accountId: document.getElementById('accountId'),
+    accountCur: document.getElementById('accountCur'),
+    accountSelect: document.getElementById('accountSelect'),
+    verifiedBadge: document.getElementById('verifiedBadge'),
+    oauthBanner: document.getElementById('oauthBanner'),
+  };
+
+  let mode = 'live';
+  let ws = null;
+  let demoTimer = null;
+  let connectTimeout = null;
+  let pingInterval = null;
+  let reconnectAttempts = 0;
+  let reconnectTimer = null;
+  let digits = [];
+  let running = false;
+  let aiCountdownTimer = null;
+  let aiSecondsLeft = 0;
+  let aiTotalSeconds = 0;
+  const MIN_AI_SAMPLE = 20;
+  let derivAccounts = []; // [{loginid, token, currency}]
+  let activeAccount = null;
+  let accountVerified = false;
+
+  // ---------- Animated number tween (used for stat cards / percentage readouts) ----------
+  function animateNumber(el, newValue, suffix){
+    suffix = suffix || '';
+    const to = parseFloat(newValue);
+    if(isNaN(to)){
+      if(el._raf){ cancelAnimationFrame(el._raf); el._raf = null; }
+      el.textContent = newValue;
+      delete el.dataset.rawVal;
+      return;
+    }
+    const prev = el.dataset.rawVal !== undefined ? parseFloat(el.dataset.rawVal) : NaN;
+    const from = isNaN(prev) ? to : prev;
+    el.dataset.rawVal = to;
+    if(prefersReducedMotion || from === to){
+      el.textContent = to + suffix;
+      return;
+    }
+    if(el._raf){ cancelAnimationFrame(el._raf); }
+    const duration = 320;
+    const start = performance.now();
+    function tick(now){
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      const cur = Math.round(from + (to - from) * eased);
+      el.textContent = cur + suffix;
+      if(t < 1){ el._raf = requestAnimationFrame(tick); } else { el._raf = null; }
+    }
+    el._raf = requestAnimationFrame(tick);
+  }
+
+  function retriggerFlash(el){
+    el.classList.remove('flash');
+    void el.offsetWidth;
+    el.classList.add('flash');
+  }
+
+  const RING_CIRC = 2 * Math.PI * 34;
+  function updateCountdownRing(secondsLeft, totalSeconds){
+    if(!els.countdownRingProgress) return;
+    const pct = totalSeconds > 0 ? Math.max(0, Math.min(1, secondsLeft / totalSeconds)) : 0;
+    els.countdownRingProgress.style.strokeDashoffset = (RING_CIRC * (1 - pct)).toFixed(2);
+  }
+
+  function buildHistogram(){
+    els.histogram.innerHTML = '';
+    for(let d=0; d<10; d++){
+      const col = document.createElement('div');
+      col.className = 'bar-col';
+      col.innerHTML = `<div class="bar-pct" id="pct-${d}">0%</div><div class="bar" id="bar-${d}" style="height:2px"></div><div class="bar-lbl">${d}</div>`;
+      els.histogram.appendChild(col);
+    }
+  }
+  buildHistogram();
+
+  function setStatus(state, text){
+    els.statusDot.className = 'dot ' + (state === 'live' ? 'dot-live' : state === 'demo' ? 'dot-demo' : 'dot-off');
+    els.statusText.textContent = text;
+  }
+
+  function setMode(newMode){
+    mode = newMode;
+    [...els.modeToggle.children].forEach(btn => btn.classList.toggle('active', btn.dataset.mode === newMode));
+    els.appIdRow.style.display = newMode === 'live' ? 'block' : 'none';
+    els.symbolSelect.disabled = false;
+  }
+  els.modeToggle.addEventListener('click', (e) => {
+    if(e.target.tagName !== 'BUTTON') return;
+    stopTracking();
+    setMode(e.target.dataset.mode);
+  });
+
+  function extractLastDigit(quote){
+    const str = String(quote).replace('.', '');
+    return parseInt(str.charAt(str.length - 1), 10);
+  }
+
+  function pushDigit(d){
+    const windowSize = parseInt(els.windowSelect.value, 10);
+    digits.push(d);
+    if(digits.length > windowSize) digits.shift();
+    render();
+  }
+
+  function render(){
+    const total = digits.length;
+    animateNumber(els.totalTicksVal, total);
+    els.tickCountText.textContent = total ? `${total} tick${total===1?'':'s'} in window` : '';
+
+    const counts = new Array(10).fill(0);
+    digits.forEach(d => counts[d]++);
+    const maxCount = Math.max(...counts, 0);
+
+    let mostIdx = 0, leastIdx = 0;
+    if(total > 0){
+      mostIdx = counts.indexOf(Math.max(...counts));
+      leastIdx = counts.indexOf(Math.min(...counts));
+    }
+    animateNumber(els.mostFreqVal, total ? mostIdx : '—');
+    animateNumber(els.leastFreqVal, total ? leastIdx : '—');
+
+    for(let d=0; d<10; d++){
+      const pct = total ? Math.round((counts[d] / total) * 100) : 0;
+      const barEl = document.getElementById('bar-' + d);
+      const pctEl = document.getElementById('pct-' + d);
+      const heightPx = total ? Math.max(2, (counts[d] / (maxCount || 1)) * 150) : 2;
+      barEl.style.height = heightPx + 'px';
+      barEl.classList.toggle('hot', total > 0 && counts[d] === maxCount && maxCount > 0);
+      pctEl.textContent = pct + '%';
+    }
+
+    const evenCount = digits.filter(d => d % 2 === 0).length;
+    const oddCount = total - evenCount;
+    animateNumber(els.evenPct, total ? Math.round((evenCount/total)*100) : 0, '%');
+    animateNumber(els.oddPct, total ? Math.round((oddCount/total)*100) : 0, '%');
+
+    const ouBarrier = parseInt(els.ouBarrierSelect.value, 10);
+    const overCountOU = digits.filter(d => d > ouBarrier).length;
+    const underCountOU = digits.filter(d => d < ouBarrier).length;
+    const tieCountOU = digits.filter(d => d === ouBarrier).length;
+    animateNumber(els.overPct, total ? Math.round((overCountOU/total)*100) : 0, '%');
+    animateNumber(els.underPct, total ? Math.round((underCountOU/total)*100) : 0, '%');
+    animateNumber(els.tiePct, total ? Math.round((tieCountOU/total)*100) : '—', total ? '%' : '');
+
+    if(total){
+      let streak = 1;
+      const lastType = digits[total-1] % 2;
+      for(let i=total-2; i>=0; i--){
+        if(digits[i] % 2 === lastType) streak++; else break;
+      }
+      els.streakVal.textContent = `${streak} ${lastType === 0 ? 'Even' : 'Odd'} in a row`;
+      els.streakVal.className = 'val ' + (lastType === 0 ? 'even-c' : 'odd-c');
+    } else {
+      els.streakVal.textContent = '—';
+      els.streakVal.className = 'val';
+    }
+
+    if(total){
+      const last20 = digits.slice(-20);
+      els.seqRow.innerHTML = last20.map(d =>
+        `<span class="${d % 2 === 0 ? 'even-d' : 'odd-d'}">${d}</span>`
+      ).join('');
+    } else {
+      els.seqRow.innerHTML = '<div class="empty">Start tracking to see live digits</div>';
+    }
+  }
+
+  function computeAiSignal(){
+    const total = digits.length;
+    const barrier = parseInt(els.barrierSelect.value, 10);
+
+    if(total < MIN_AI_SAMPLE){
+      els.signalBadge.textContent = 'GATHERING DATA';
+      els.signalBadge.className = 'signal-badge signal-gathering';
+      animateNumber(els.confidenceVal, '—');
+      els.confidenceFill.style.width = '0%';
+      els.aiReason.textContent = `Needs at least ${MIN_AI_SAMPLE} ticks in the window — currently at ${total}.`;
+      retriggerFlash(els.signalBadge);
+      return;
+    }
+
+    const overCount = digits.filter(d => d > barrier).length;
+    const underCount = total - overCount;
+    const overPct = overCount / total;
+    const underPct = underCount / total;
+
+    // Deviation from the theoretical 50/50 split for this barrier, scaled into a confidence read.
+    // Capped well short of 100 — a stats read of a random stream should never claim certainty.
+    const deviation = Math.abs(overPct - 0.5) * 2; // 0 (even split) .. 1 (fully one-sided)
+    let confidence = Math.round(50 + deviation * 42);
+    confidence = Math.min(confidence, 92);
+
+    let signal, badgeClass, sideLabel;
+    if(overCount === underCount){
+      signal = 'NEUTRAL'; badgeClass = 'signal-neutral'; sideLabel = 'No edge';
+    } else if(overPct > underPct){
+      signal = `OVER ${barrier}`; badgeClass = 'signal-over'; sideLabel = 'Over';
+    } else {
+      signal = `UNDER ${barrier}`; badgeClass = 'signal-under'; sideLabel = 'Under';
+    }
+
+    els.signalBadge.textContent = signal;
+    els.signalBadge.className = 'signal-badge ' + badgeClass;
+    animateNumber(els.confidenceVal, confidence, '%');
+    els.confidenceFill.style.width = confidence + '%';
+    retriggerFlash(els.signalBadge);
+
+    els.aiReason.textContent = signal === 'NEUTRAL'
+      ? `Last ${total} ticks split exactly evenly across the barrier of ${barrier} (${overCount} over / ${underCount} under). No statistical edge right now — sit this one out.`
+      : `Last ${total} ticks: ${overCount} over ${barrier} (${Math.round(overPct*100)}%) vs ${underCount} under (${Math.round(underPct*100)}%). ${sideLabel} currently dominates this window — confidence reflects how far that split sits from a random 50/50, not a guarantee of the next tick.`;
+  }
+
+  function startAiCycle(){
+    stopAiCycle();
+    computeAiSignal();
+    aiTotalSeconds = parseInt(els.refreshSelect.value, 10);
+    aiSecondsLeft = aiTotalSeconds;
+    els.countdownVal.textContent = aiSecondsLeft + 's';
+    updateCountdownRing(aiSecondsLeft, aiTotalSeconds);
+    aiCountdownTimer = setInterval(() => {
+      aiSecondsLeft--;
+      if(aiSecondsLeft <= 0){
+        computeAiSignal();
+        aiTotalSeconds = parseInt(els.refreshSelect.value, 10);
+        aiSecondsLeft = aiTotalSeconds;
+      }
+      els.countdownVal.textContent = aiSecondsLeft + 's';
+      updateCountdownRing(aiSecondsLeft, aiTotalSeconds);
+    }, 1000);
+  }
+
+  function stopAiCycle(){
+    if(aiCountdownTimer){ clearInterval(aiCountdownTimer); aiCountdownTimer = null; }
+    els.countdownVal.textContent = '—';
+    updateCountdownRing(0, 1);
+  }
+
+  els.barrierSelect.addEventListener('change', () => { if(running) computeAiSignal(); });
+  els.refreshSelect.addEventListener('change', () => { if(running) startAiCycle(); });
+
+  function parseOauthRedirect(){
+    const params = new URLSearchParams(window.location.search);
+    const accounts = [];
+    let i = 1;
+    while(params.has('acct' + i)){
+      accounts.push({
+        loginid: params.get('acct' + i),
+        token: params.get('token' + i),
+        currency: params.get('cur' + i) || ''
+      });
+      i++;
+    }
+    if(accounts.length > 0){
+      derivAccounts = accounts;
+      activeAccount = accounts[0];
+      try{ localStorage.setItem('mv_deriv_accounts', JSON.stringify(accounts)); }catch(e){}
+      // Strip tokens out of the visible URL/history immediately — they shouldn't linger there
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+      return true;
+    }
+    return false;
+  }
+
+  function loadStoredAccounts(){
+    try{
+      const raw = localStorage.getItem('mv_deriv_accounts');
+      if(raw){
+        derivAccounts = JSON.parse(raw);
+        activeAccount = derivAccounts[0] || null;
+      }
+    }catch(e){}
+  }
+
+  function updateAccountUI(){
+    if(activeAccount){
+      els.accountLoggedOut.style.display = 'none';
+      els.accountLoggedIn.style.display = 'flex';
+      els.accountAvatar.textContent = (activeAccount.loginid || 'D').charAt(0);
+      els.accountId.textContent = activeAccount.loginid;
+      els.accountCur.textContent = activeAccount.currency || '';
+      els.verifiedBadge.style.display = accountVerified ? 'inline-block' : 'none';
+      if(derivAccounts.length > 1){
+        els.accountSelect.style.display = 'inline-block';
+        els.accountSelect.innerHTML = derivAccounts.map(a =>
+          `<option value="${a.loginid}" ${a.loginid === activeAccount.loginid ? 'selected' : ''}>${a.loginid} (${a.currency})</option>`
+        ).join('');
+      } else {
+        els.accountSelect.style.display = 'none';
+      }
+    } else {
+      els.accountLoggedOut.style.display = 'flex';
+      els.accountLoggedIn.style.display = 'none';
+    }
+  }
+
+  function showOauthBanner(text, autoHideMs){
+    els.oauthBanner.textContent = text;
+    els.oauthBanner.classList.add('show');
+    if(autoHideMs){
+      setTimeout(() => { els.oauthBanner.classList.remove('show'); }, autoHideMs);
+    }
+  }
+
+  function verifyAccount(){
+    if(!activeAccount || !activeAccount.token) return;
+    const appId = (els.appIdInput.value || '').trim() || '1089';
+    showOauthBanner('Verifying your Deriv login…');
+    let settled = false;
+    let vws;
+    try{
+      vws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${encodeURIComponent(appId)}`);
+    }catch(err){
+      showOauthBanner('Could not reach Deriv to verify login — you can still try Start tracking.', 6000);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      if(!settled){ settled = true; vws.close(); showOauthBanner('Verification timed out — you can still try Start tracking.', 6000); }
+    }, 8000);
+    vws.onopen = () => { vws.send(JSON.stringify({ authorize: activeAccount.token })); };
+    vws.onmessage = (msg) => {
+      let data; try{ data = JSON.parse(msg.data); }catch(e){ return; }
+      if(data.msg_type === 'authorize' && !settled){
+        settled = true; clearTimeout(timeout);
+        if(data.error){
+          accountVerified = false;
+          derivAccounts = []; activeAccount = null;
+          try{ localStorage.removeItem('mv_deriv_accounts'); }catch(e){}
+          updateAccountUI();
+          showOauthBanner('Deriv could not verify that login — please try "Login via Deriv" again.', 7000);
+        } else {
+          accountVerified = true;
+          activeAccount.currency = data.authorize.currency || activeAccount.currency;
+          activeAccount.loginid = data.authorize.loginid || activeAccount.loginid;
+          updateAccountUI();
+          showOauthBanner(`Deriv login verified — you're fully connected as ${data.authorize.loginid}.`, 5000);
+        }
+        vws.close();
+      }
+    };
+    vws.onerror = () => {
+      if(!settled){ settled = true; clearTimeout(timeout); showOauthBanner('Could not reach Deriv to verify login — you can still try Start tracking.', 6000); }
+    };
+  }
+
+  els.oauthBtn.addEventListener('click', () => {
+    const appId = (els.appIdInput.value || '').trim() || '1089';
+    els.oauthBtn.disabled = true;
+    els.oauthBtnLabel.textContent = 'Redirecting to Deriv…';
+    window.location.href = `https://oauth.deriv.com/oauth2/authorize?app_id=${encodeURIComponent(appId)}&l=en`;
+  });
+
+  els.logoutBtn.addEventListener('click', () => {
+    derivAccounts = [];
+    activeAccount = null;
+    accountVerified = false;
+    try{ localStorage.removeItem('mv_deriv_accounts'); }catch(e){}
+    updateAccountUI();
+    if(running){ els.connectBtn.click(); } // stop any active session cleanly since auth changed
+  });
+
+  els.accountSelect.addEventListener('change', () => {
+    activeAccount = derivAccounts.find(a => a.loginid === els.accountSelect.value) || activeAccount;
+    updateAccountUI();
+  });
+
+  function startDemo(){
+    setStatus('demo', 'Demo mode — simulated ticks');
+    demoTimer = setInterval(() => {
+      pushDigit(Math.floor(Math.random() * 10));
+    }, 700);
+  }
+
+  function startLive(){
+    const appId = (els.appIdInput.value || '').trim() || '1089';
+    const symbol = els.symbolSelect.value;
+    setStatus('off', 'Connecting…');
+
+    try{
+      ws = new WebSocket(`wss://ws.derivws.com/websockets/v3?app_id=${encodeURIComponent(appId)}`);
+    }catch(err){
+      fallbackToDemo();
+      return;
+    }
+
+    connectTimeout = setTimeout(() => {
+      if(ws && ws.readyState !== WebSocket.OPEN){
+        ws.close();
+        fallbackToDemo();
+      }
+    }, 8000);
+
+    ws.onopen = () => {
+      clearTimeout(connectTimeout);
+      reconnectAttempts = 0;
+      pingInterval = setInterval(() => {
+        if(ws && ws.readyState === WebSocket.OPEN){
+          ws.send(JSON.stringify({ ping: 1 }));
+        }
+      }, 25000);
+
+      if(activeAccount && activeAccount.token){
+        setStatus('off', 'Authorizing account…');
+        ws.send(JSON.stringify({ authorize: activeAccount.token }));
+      } else {
+        setStatus('live', `Live — ${symbol} · direct feed, no login`);
+        ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
+      }
+    };
+
+    ws.onmessage = (msg) => {
+      let data;
+      try{ data = JSON.parse(msg.data); }catch(e){ return; }
+
+      if(data.msg_type === 'authorize'){
+        if(data.error){
+          // Token expired/invalid — fall back to anonymous live data rather than failing the session
+          setStatus('live', `Live — ${symbol} · session token invalid, using public feed`);
+          derivAccounts = []; activeAccount = null; accountVerified = false;
+          try{ localStorage.removeItem('mv_deriv_accounts'); }catch(e){}
+          updateAccountUI();
+        } else {
+          accountVerified = true;
+          updateAccountUI();
+          setStatus('live', `Live — ${symbol} · ${data.authorize.loginid} (${data.authorize.currency})`);
+        }
+        ws.send(JSON.stringify({ ticks: symbol, subscribe: 1 }));
+        return;
+      }
+
+      if(data.msg_type === 'tick' && data.tick && typeof data.tick.quote !== 'undefined'){
+        pushDigit(extractLastDigit(data.tick.quote));
+      }
+      if(data.error){
+        ws.close();
+        fallbackToDemo();
+      }
+    };
+
+    ws.onerror = () => { fallbackToDemo(); };
+    ws.onclose = () => {
+      if(pingInterval){ clearInterval(pingInterval); pingInterval = null; }
+      if(!running || mode !== 'live') return;
+      // Unexpected drop mid-session: try to reconnect with backoff instead of silently dying
+      reconnectAttempts++;
+      if(reconnectAttempts <= 5){
+        setStatus('off', `Reconnecting… (attempt ${reconnectAttempts})`);
+        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 15000);
+        reconnectTimer = setTimeout(() => { if(running && mode === 'live') startLive(); }, delay);
+      } else {
+        fallbackToDemo();
+      }
+    };
+  }
+
+  function fallbackToDemo(){
+    if(!running) return;
+    els.fallbackBanner.classList.add('show');
+    stopTracking(true);
+    startDemo();
+  }
+
+  function stopTracking(keepDigits){
+    if(ws){ ws.onclose = null; ws.close(); ws = null; }
+    if(demoTimer){ clearInterval(demoTimer); demoTimer = null; }
+    if(connectTimeout){ clearTimeout(connectTimeout); connectTimeout = null; }
+    if(pingInterval){ clearInterval(pingInterval); pingInterval = null; }
+    if(reconnectTimer){ clearTimeout(reconnectTimer); reconnectTimer = null; }
+    reconnectAttempts = 0;
+    if(!keepDigits){ digits = []; render(); }
+  }
+
+  els.connectBtn.addEventListener('click', () => {
+    if(running){
+      running = false;
+      stopTracking();
+      stopAiCycle();
+      setStatus('off', 'Not connected');
+      els.connectBtn.textContent = 'Start tracking';
+      return;
+    }
+    running = true;
+    digits = [];
+    els.fallbackBanner.classList.remove('show');
+    els.connectBtn.textContent = 'Stop tracking';
+    if(mode === 'live'){ startLive(); } else { startDemo(); }
+    startAiCycle();
+  });
+
+  els.windowSelect.addEventListener('change', () => {
+    const windowSize = parseInt(els.windowSelect.value, 10);
+    if(digits.length > windowSize) digits = digits.slice(-windowSize);
+    render();
+  });
+
+  els.ouBarrierSelect.addEventListener('change', render);
+
+  if(!parseOauthRedirect()){ loadStoredAccounts(); }
+  updateAccountUI();
+  if(activeAccount){ verifyAccount(); }
+  render();
+})();
+
+// ---------- Ambient particle field (purely decorative, isolated from app logic) ----------
+(function initParticles(){
+  const canvas = document.getElementById('particlesCanvas');
+  if(!canvas || !canvas.getContext) return;
+  const ctx = canvas.getContext('2d');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let w, h, particles, raf = null;
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+  }
+  function seed(){
+    const count = Math.min(60, Math.max(18, Math.floor((w*h)/28000)));
+    particles = Array.from({length: count}, () => ({
+      x: Math.random()*w, y: Math.random()*h,
+      vx: (Math.random()-0.5)*0.16, vy: (Math.random()-0.5)*0.16,
+      r: Math.random()*1.6+0.5
+    }));
+  }
+  resize(); seed();
+  window.addEventListener('resize', () => { resize(); seed(); });
+
+  function frame(){
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = 'rgba(148,197,224,0.55)';
+    for(const p of particles){
+      p.x += p.vx; p.y += p.vy;
+      if(p.x < 0) p.x = w; if(p.x > w) p.x = 0;
+      if(p.y < 0) p.y = h; if(p.y > h) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(148,163,196,0.08)';
+    ctx.lineWidth = 1;
+    for(let i=0;i<particles.length;i++){
+      for(let j=i+1;j<particles.length;j++){
+        const a = particles[i], b = particles[j];
+        const dx = a.x-b.x, dy = a.y-b.y;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if(dist < 110){
+          ctx.globalAlpha = 1 - dist/110;
+          ctx.beginPath();
+          ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+          ctx.stroke();
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+    raf = requestAnimationFrame(frame);
+  }
+
+  if(reduced){
+    frame();
+    if(raf){ cancelAnimationFrame(raf); raf = null; }
+  } else {
+    frame();
+    document.addEventListener('visibilitychange', () => {
+      if(document.hidden){ if(raf){ cancelAnimationFrame(raf); raf = null; } }
+      else if(!raf){ frame(); }
+    });
+  }
+})();
+</script>
+</body>
+</html>
